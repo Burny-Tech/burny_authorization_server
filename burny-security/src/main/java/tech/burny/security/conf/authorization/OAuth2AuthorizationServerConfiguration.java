@@ -51,8 +51,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import tech.burny.security.conf.captcha.CaptchaAuthenticationFilter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationConverter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationProvider;
 import tech.burny.security.utlils.SecurityUtils;
@@ -157,6 +159,10 @@ public class OAuth2AuthorizationServerConfiguration {
                 .formLogin(formLogin ->
                         formLogin.loginPage("/login")
                 );
+
+        // 在UsernamePasswordAuthenticationFilter拦截器之前添加验证码校验拦截器，并拦截POST的登录接口
+        http.addFilterBefore(new CaptchaAuthenticationFilter("/login"), UsernamePasswordAuthenticationFilter.class);
+
         // 添加BearerTokenAuthenticationFilter，将认证服务当做一个资源服务，解析请求头中的token
         http.oauth2ResourceServer((resourceServer) -> resourceServer
                 .jwt(Customizer.withDefaults())

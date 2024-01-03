@@ -24,7 +24,7 @@ import tech.burny.security.exception.InvalidCaptchaException;
  * @author vains
  */
 @Slf4j
-@Component
+//@Component
 public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
 
     /**
