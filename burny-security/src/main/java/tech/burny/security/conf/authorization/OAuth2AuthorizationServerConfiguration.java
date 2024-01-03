@@ -44,6 +44,7 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import tech.burny.security.conf.device.DeviceClientAuthenticationConverter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationProvider;
+import tech.burny.security.utlils.SecurityUtils;
 
 
 import static tech.burny.common.constant.Constants.CUSTOM_CONSENT_PAGE_URI;
@@ -96,6 +97,7 @@ public class OAuth2AuthorizationServerConfiguration {
                 );
 
         //未登录访问认证端点重定向到login页面
+        //这段代码的意思是所有来自页面的请求都由LoginUrlAuthenticationEntryPoint来处理。
         http
                 .
                 exceptionHandling((exception) -> exception.defaultAuthenticationEntryPointFor(
@@ -142,7 +144,13 @@ public class OAuth2AuthorizationServerConfiguration {
         // 添加BearerTokenAuthenticationFilter，将认证服务当做一个资源服务，解析请求头中的token
         http.oauth2ResourceServer((resourceServer) -> resourceServer
                 .jwt(Customizer.withDefaults())
-        );
+                // 添加BearerTokenAuthenticationFilter，将认证服务当做一个资源服务，解析请求头中的token
+
+                .accessDeniedHandler(SecurityUtils::exceptionHandler)
+                .authenticationEntryPoint(SecurityUtils::exceptionHandler)
+        )
+
+        ;
 
         return http.build();
     }
