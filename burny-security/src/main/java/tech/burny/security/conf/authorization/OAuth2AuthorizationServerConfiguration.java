@@ -42,6 +42,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import tech.burny.security.conf.device.DeviceClientAuthenticationConverter;
+import tech.burny.security.conf.device.DeviceClientAuthenticationProvider;
 
 
 import static tech.burny.common.constant.Constants.CUSTOM_CONSENT_PAGE_URI;
@@ -54,9 +56,22 @@ public class OAuth2AuthorizationServerConfiguration {
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
+                                                                      RegisteredClientRepository registeredClientRepository,
+                                                                      AuthorizationServerSettings authorizationServerSettings
+
+
+    ) throws Exception {
 //        配置默认的设置，参考源代码
         org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
+        // 新建设备码converter和provider
+        DeviceClientAuthenticationConverter deviceClientAuthenticationConverter =
+                new DeviceClientAuthenticationConverter(
+                        authorizationServerSettings.getDeviceAuthorizationEndpoint());
+        DeviceClientAuthenticationProvider deviceClientAuthenticationProvider =
+                new DeviceClientAuthenticationProvider(registeredClientRepository);
+
 
 
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
@@ -64,7 +79,21 @@ public class OAuth2AuthorizationServerConfiguration {
                 .oidc(Customizer.withDefaults())
                 //设置自定义授权页面
                 .authorizationEndpoint(oAuth2AuthorizationEndpointConfigurer -> oAuth2AuthorizationEndpointConfigurer
-                        .consentPage(CUSTOM_CONSENT_PAGE_URI));
+                        .consentPage(CUSTOM_CONSENT_PAGE_URI))
+                // 设置设备码用户验证url(自定义用户验证页)
+                .deviceAuthorizationEndpoint(deviceAuthorizationEndpoint ->
+                        deviceAuthorizationEndpoint.verificationUri("/activate")
+                )
+                // 设置验证设备码用户确认页面
+                .deviceVerificationEndpoint(deviceVerificationEndpoint ->
+                        deviceVerificationEndpoint.consentPage(CUSTOM_CONSENT_PAGE_URI)
+                )
+                .clientAuthentication(clientAuthentication ->
+                        // 客户端认证添加设备码的converter和provider
+                        clientAuthentication
+                                .authenticationConverter(deviceClientAuthenticationConverter)
+                                .authenticationProvider(deviceClientAuthenticationProvider)
+                );
 
         //未登录访问认证端点重定向到login页面
         http
@@ -77,6 +106,9 @@ public class OAuth2AuthorizationServerConfiguration {
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(Customizer.withDefaults()))
         ;
+
+
+
 
 
 
