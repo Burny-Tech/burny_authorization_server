@@ -1,5 +1,5 @@
 server:
-  port: 2024
+  port: 8080
 spring:
   application:
     name: burny_cloud
@@ -39,4 +39,9 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+
+
+logging:
+  level:
+    root: debug
 
