@@ -6,7 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "super_rel")
+@Table(name = "security_rel")
 public class SecurityRel {
     @Id
     private Long id;
