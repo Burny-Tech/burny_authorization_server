@@ -331,6 +331,8 @@ public class OAuth2AuthorizationServerConfiguration {
 
     //2.9  配置认证服务器设置
 
+//        7 引入资源服务器
+
     /**
      * 添加认证服务器配置，设置jwt签发者、默认端点请求地址等
      *
@@ -338,8 +340,15 @@ public class OAuth2AuthorizationServerConfiguration {
      */
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().build();
+        return AuthorizationServerSettings.builder()
+                /*
+                    设置token签发地址(http(s)://{ip}:{port}/context-path, http(s)://domain.com/context-path)
+                    如果需要通过ip访问这里就是ip，如果是有域名映射就填域名，通过什么方式访问该服务这里就填什么
+                 */
+                .issuer("http://127.0.0.1:8080")
+                .build();
     }
+
 
     //2.10
     /**
@@ -413,6 +422,7 @@ public class OAuth2AuthorizationServerConfiguration {
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
     }
+
 
 
 

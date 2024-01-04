@@ -20,6 +20,7 @@
         <module>burny-system</module>
         <module>burny-security</module>
         <module>burny-common</module>
+        <module>burny-resource</module>
     </modules>
 
     <properties>

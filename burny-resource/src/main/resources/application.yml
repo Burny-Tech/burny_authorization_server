@@ -1,0 +1,60 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: burny_resource
+  datasource:
+    driver-class-name:  com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.1.62:3306/burny?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: burny
+    password: Burny@2024
+  jpa:
+    show-sql: true
+#    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    open-in-view: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        enable_lazy_load_no_trans: true
+# 资源服务器配置 开始
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Jwt中claims的iss属性，也就是jwt的签发地址，即认证服务器的根路径
+          # 资源服务器会进一步的配置，通过该地址获取公钥以解析jwt
+          # 需要设置成资认证服务器 如果认证服务器填192.168.1.xx:8080 这里就需要改成 192.168.1.xx:8080 要保持一致
+          issuer-uri: http://127.0.0.1:8080
+
+# 资源服务器配置 结束
+
+
+# springdoc-openapi项目配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: tech.burny
+    - group: '权限'
+#      paths-to-match: '/**'
+      packages-to-scan: tech.burny.security
+# knife4j的增强配置，不需要增强可以不配
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+
+logging:
+  level:
+    root: info
+
+
