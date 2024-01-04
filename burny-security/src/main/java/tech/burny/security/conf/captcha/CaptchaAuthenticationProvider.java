@@ -2,6 +2,7 @@ package tech.burny.security.conf.captcha;
 
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -13,6 +14,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import tech.burny.common.constant.SecurityConstants;
 import tech.burny.security.exception.InvalidCaptchaException;
 
 /**
@@ -50,6 +52,16 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
             throw new InvalidCaptchaException("Failed to get the current request.");
         }
         HttpServletRequest request = ((ServletRequestAttributes)requestAttributes).getRequest();
+
+
+        // 获取当前登录方式
+        String loginType = request.getParameter("loginType");
+        if (Objects.equals(loginType, SecurityConstants.SMS_LOGIN_TYPE)) {
+            log.info("It isn't necessary captcha authenticate.");
+            return super.authenticate(authentication);
+        }
+
+
 
         // 获取参数中的验证码
         String code = request.getParameter("code");

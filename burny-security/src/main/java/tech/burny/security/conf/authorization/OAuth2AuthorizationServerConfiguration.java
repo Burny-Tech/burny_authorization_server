@@ -152,7 +152,8 @@ public class OAuth2AuthorizationServerConfiguration {
                                 "/static/assets/**",
                                 "/webjars/**",
                                 "/login",
-                                "/getCaptcha/getCaptcha").permitAll()
+                                "/getCaptcha/getCaptcha",
+                                "/getSmsCaptcha/getSmsCaptcha").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 指定登录页面

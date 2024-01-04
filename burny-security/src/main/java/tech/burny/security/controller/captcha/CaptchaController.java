@@ -1,4 +1,4 @@
-package tech.burny.security.conf.captcha;
+package tech.burny.security.controller.captcha;
 
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.ShearCaptcha;
