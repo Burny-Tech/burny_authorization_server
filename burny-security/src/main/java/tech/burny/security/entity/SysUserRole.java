@@ -3,6 +3,8 @@ package tech.burny.security.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import java.io.Serializable;
@@ -18,6 +20,8 @@ import java.io.Serializable;
  */
 @TableName("sys_user_role")
 @Schema(name = "SysUserRole对象", description = "")
+@JsonSerialize
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SysUserRole implements Serializable {
 
     private static final long serialVersionUID = 1L;

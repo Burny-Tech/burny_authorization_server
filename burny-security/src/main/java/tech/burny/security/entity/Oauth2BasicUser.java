@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import java.io.Serializable;
@@ -25,6 +27,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 @TableName("oauth2_basic_user")
 @Data
 @Schema(name = "Oauth2BasicUser对象", description = "基础用户信息表")
+@JsonSerialize
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Oauth2BasicUser implements Serializable, UserDetails {
 
     private static final long serialVersionUID = 1L;
