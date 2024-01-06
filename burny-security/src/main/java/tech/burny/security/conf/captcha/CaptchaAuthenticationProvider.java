@@ -26,7 +26,7 @@ import tech.burny.security.exception.InvalidCaptchaException;
  * @author vains
  */
 @Slf4j
-//@Component
+@Component
 public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
 
     /**
@@ -49,11 +49,15 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
         // 获取当前request
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes == null) {
-            throw new InvalidCaptchaException("Failed to get the current request.");
+            InvalidCaptchaException invalidCaptchaException = new InvalidCaptchaException("Failed to get the current request.");
+            invalidCaptchaException.printStackTrace();
+            throw invalidCaptchaException;
         }
         HttpServletRequest request = ((ServletRequestAttributes)requestAttributes).getRequest();
 
 
+        // 8 !! 重点。如果用自定义grant_type 的方式，smprovider 会比这个先执行，后执行到这里的时候
+        // 因为有super.authenticate  所以跳过了验证码模式。
         // 获取当前登录方式
         String loginType = request.getParameter("loginType");
         if (Objects.equals(loginType, SecurityConstants.SMS_LOGIN_TYPE)) {
@@ -66,17 +70,23 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
         // 获取参数中的验证码
         String code = request.getParameter("code");
         if (ObjectUtils.isEmpty(code)) {
-            throw new InvalidCaptchaException("The captcha cannot be empty.");
+            InvalidCaptchaException invalidCaptchaException = new InvalidCaptchaException("The captcha cannot be empty.");
+            invalidCaptchaException.printStackTrace();
+            throw invalidCaptchaException;
         }
 
         // 获取session中存储的验证码
         Object sessionCaptcha = request.getSession(Boolean.FALSE).getAttribute("captcha");
         if (sessionCaptcha instanceof String sessionCode) {
             if (!sessionCode.equalsIgnoreCase(code)) {
-                throw new InvalidCaptchaException("The captcha is incorrect.");
+                InvalidCaptchaException invalidCaptchaException = new InvalidCaptchaException("The captcha is incorrect.");
+                invalidCaptchaException.printStackTrace();
+                throw invalidCaptchaException;
             }
         } else {
-            throw new InvalidCaptchaException("The captcha is abnormal. Obtain it again.");
+            InvalidCaptchaException invalidCaptchaException = new InvalidCaptchaException("The captcha is abnormal. Obtain it again.");
+            invalidCaptchaException.printStackTrace();
+            throw invalidCaptchaException;
         }
 
         log.info("Captcha authenticated.");

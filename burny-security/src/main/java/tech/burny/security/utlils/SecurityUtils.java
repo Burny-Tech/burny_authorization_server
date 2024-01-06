@@ -8,11 +8,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.BearerTokenError;
 import org.springframework.security.oauth2.server.resource.BearerTokenErrorCodes;
 import org.springframework.security.oauth2.server.resource.authentication.AbstractOAuth2TokenAuthenticationToken;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -40,6 +45,7 @@ public class SecurityUtils {
      * @param e        具体的异常信息
      */
     public static void exceptionHandler(HttpServletRequest request, HttpServletResponse response, Throwable e) {
+        e.printStackTrace();
         Map<String, String> parameters = getErrorParameter(request, response, e);
         String wwwAuthenticate = computeWwwAuthenticateHeaderValue(parameters);
         response.addHeader(HttpHeaders.WWW_AUTHENTICATE, wwwAuthenticate);
@@ -119,5 +125,60 @@ public class SecurityUtils {
             }
         }
         return wwwAuthenticate.toString();
+    }
+    /**
+     * 提取请求中的参数并转为一个map返回
+     *
+     * @param request 当前请求
+     * @return 请求中的参数
+     */
+    public static MultiValueMap<String, String> getParameters(HttpServletRequest request) {
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>(parameterMap.size());
+        parameterMap.forEach((key, values) -> {
+            if (values.length > 0) {
+                for (String value : values) {
+                    parameters.add(key, value);
+                }
+            }
+        });
+        return parameters;
+    }
+    /**
+     * 抛出 OAuth2AuthenticationException 异常
+     *
+     * @param errorCode 错误码
+     * @param message   错误信息
+     * @param errorUri  错误对照地址
+     */
+    public static void throwError(String errorCode, String message, String errorUri) {
+        OAuth2Error error = new OAuth2Error(errorCode, message, errorUri);
+        OAuth2AuthenticationException oAuth2AuthenticationException = new OAuth2AuthenticationException(error);
+        oAuth2AuthenticationException.printStackTrace();
+        throw oAuth2AuthenticationException;
+    }
+
+
+    /**
+     * 从认证信息中获取客户端token
+     *
+     * @param authentication 认证信息
+     * @return 客户端认证信息，获取失败抛出异常
+     */
+    public static OAuth2ClientAuthenticationToken getAuthenticatedClientElseThrowInvalidClient(Authentication authentication) {
+        OAuth2ClientAuthenticationToken clientPrincipal = null;
+
+
+//        如果是A.isAssignableFrom(B) 确定一个类(B)是不是继承来自于另一个父类(A)，一个接口(A)是不是实现了另外一个接口(B)，或者两个类相同。主要，这里比较的维度不是实例对象，而是类本身，因为这个方法本身就是Class类的方法，判断的肯定是和类信息相关的。
+//
+//        也就是判断当前的Class对象所表示的类，是不是参数中传递的Class对象所表示的类的父类，超接口，或者是相同的类型。是则返回true，否则返回false。
+
+        if (OAuth2ClientAuthenticationToken.class.isAssignableFrom(authentication.getPrincipal().getClass())) {
+            clientPrincipal = (OAuth2ClientAuthenticationToken) authentication.getPrincipal();
+        }
+        if (clientPrincipal != null && clientPrincipal.isAuthenticated()) {
+            return clientPrincipal;
+        }
+        throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_CLIENT);
     }
 }

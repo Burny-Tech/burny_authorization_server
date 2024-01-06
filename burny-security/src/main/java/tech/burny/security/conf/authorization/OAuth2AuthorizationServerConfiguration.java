@@ -21,6 +21,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
@@ -46,17 +47,23 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import tech.burny.common.constant.SecurityConstants;
 import tech.burny.security.conf.captcha.CaptchaAuthenticationFilter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationConverter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationProvider;
+import tech.burny.security.conf.sms.CustomOAuth2RefreshTokenAuthenticationProvider;
+import tech.burny.security.conf.sms.SmsCaptchaGrantAuthenticationConverter;
+import tech.burny.security.conf.sms.SmsCaptchaGrantAuthenticationProvider;
 import tech.burny.security.utlils.SecurityUtils;
 
 
@@ -122,6 +129,47 @@ public class OAuth2AuthorizationServerConfiguration {
                         .jwt(Customizer.withDefaults()))
         ;
 
+//        让认证服务器元数据中有自定义的认证方式这个配置是为了访问/.well-known/oauth-authorization-server时返回的元数据中有咱们自定的grant type
+
+
+
+
+        // 自定义短信认证登录转换器
+        SmsCaptchaGrantAuthenticationConverter converter = new SmsCaptchaGrantAuthenticationConverter();
+        // 自定义短信认证登录认证提供
+        SmsCaptchaGrantAuthenticationProvider provider = new SmsCaptchaGrantAuthenticationProvider();
+
+        CustomOAuth2RefreshTokenAuthenticationProvider refreshProvider = new CustomOAuth2RefreshTokenAuthenticationProvider();
+
+        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+                // 让认证服务器元数据中有自定义的认证方式
+                .authorizationServerMetadataEndpoint(metadata
+                        -> metadata.authorizationServerMetadataCustomizer(customizer
+                            -> customizer.grantType(SecurityConstants.GRANT_TYPE_SMS_CODE)))
+                // 添加自定义grant_type——短信认证登录
+                .tokenEndpoint(tokenEndpoint -> tokenEndpoint
+                        .accessTokenRequestConverter(converter)
+                        .authenticationProvider(provider)
+                        .authenticationProvider(refreshProvider)
+                );
+
+        DefaultSecurityFilterChain build = http.build();
+
+        //  9 自定义grant_type
+        // 从框架中获取provider中所需的bean
+        OAuth2TokenGenerator<?> tokenGenerator = http.getSharedObject(OAuth2TokenGenerator.class);
+        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
+        OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
+        // 以上三个bean在build()方法之后调用是因为调用build方法时框架会尝试获取这些类，
+        // 如果获取不到则初始化一个实例放入SharedObject中，所以要在build方法调用之后获取
+        // 在通过set方法设置进provider中，但是如果在build方法之后调用authenticationProvider(provider)
+        // 框架会提示unsupported_grant_type，因为已经初始化完了，在添加就不会生效了
+        provider.setTokenGenerator(tokenGenerator);
+        provider.setAuthorizationService(authorizationService);
+        provider.setAuthenticationManager(authenticationManager);
+
+        refreshProvider.setAuthorizationService(authorizationService);
+        refreshProvider.setTokenGenerator(tokenGenerator);
 
 
 
@@ -129,7 +177,9 @@ public class OAuth2AuthorizationServerConfiguration {
 
 
 
-        return http.build();
+
+
+        return build;
     }
 
 
@@ -162,7 +212,7 @@ public class OAuth2AuthorizationServerConfiguration {
                 );
 
         // 在UsernamePasswordAuthenticationFilter拦截器之前添加验证码校验拦截器，并拦截POST的登录接口
-        http.addFilterBefore(new CaptchaAuthenticationFilter("/login"), UsernamePasswordAuthenticationFilter.class);
+//        http.addFilterBefore(new CaptchaAuthenticationFilter("/login"), UsernamePasswordAuthenticationFilter.class);
 
         // 添加BearerTokenAuthenticationFilter，将认证服务当做一个资源服务，解析请求头中的token
         http.oauth2ResourceServer((resourceServer) -> resourceServer
@@ -199,7 +249,8 @@ public class OAuth2AuthorizationServerConfiguration {
      */
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
-        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        RegisteredClient registeredClient =
+                RegisteredClient.withId(UUID.randomUUID().toString())
                 // 客户端id
                 .clientId("messaging-client")
                 // 客户端秘钥，使用密码解析器加密
@@ -210,6 +261,7 @@ public class OAuth2AuthorizationServerConfiguration {
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizationGrantType(SecurityConstants.GRANT_TYPE_SMS_CODE_Object)
                 // 授权码模式回调地址，oauth2.1已改为精准匹配，不能只设置域名，并且屏蔽了localhost
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
                 // 配置一个百度的域名回调，稍后使用该回调获取code
@@ -363,7 +415,7 @@ public class OAuth2AuthorizationServerConfiguration {
     @Bean
     public UserDetailsService users(PasswordEncoder passwordEncoder) {
         UserDetails user = User.withUsername("admin")
-                .password(passwordEncoder.encode("123456"))
+                .password(passwordEncoder.encode("12345678"))
                 .roles("admin", "normal")
                 .authorities("app", "web")
                 .build();

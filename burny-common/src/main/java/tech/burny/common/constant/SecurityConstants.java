@@ -1,6 +1,7 @@
 package tech.burny.common.constant;
 
 
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
 /**
  * security 常量类
@@ -28,6 +29,8 @@ public class SecurityConstants {
      * 自定义 grant type —— 短信验证码
      */
     public static final String GRANT_TYPE_SMS_CODE = "urn:ietf:params:oauth:grant-type:sms_code";
+
+    public static final AuthorizationGrantType GRANT_TYPE_SMS_CODE_Object = new AuthorizationGrantType(GRANT_TYPE_SMS_CODE);
 
     /**
      * 自定义 grant type —— 短信验证码 —— 手机号的key
