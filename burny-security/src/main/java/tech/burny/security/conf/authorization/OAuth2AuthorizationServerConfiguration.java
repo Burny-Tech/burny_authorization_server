@@ -54,11 +54,8 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import tech.burny.common.constant.SecurityConstants;
-import tech.burny.security.conf.captcha.CaptchaAuthenticationFilter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationConverter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationProvider;
 import tech.burny.security.conf.sms.CustomOAuth2RefreshTokenAuthenticationProvider;
@@ -74,6 +71,26 @@ import static tech.burny.common.constant.Constants.CUSTOM_CONSENT_PAGE_URI;
 public class OAuth2AuthorizationServerConfiguration {
 
 //    2.1配置端点的过滤器链
+
+    /**
+     * 生成rsa密钥对，提供给jwk
+     *
+     * @return 密钥对
+     */
+    private static KeyPair generateRsaKey() {
+        KeyPair keyPair;
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            keyPair = keyPairGenerator.generateKeyPair();
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
+        return keyPair;
+    }
+
+
+    //2.2 配置身份验证过滤器链
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -92,7 +109,6 @@ public class OAuth2AuthorizationServerConfiguration {
                         authorizationServerSettings.getDeviceAuthorizationEndpoint());
         DeviceClientAuthenticationProvider deviceClientAuthenticationProvider =
                 new DeviceClientAuthenticationProvider(registeredClientRepository);
-
 
 
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
@@ -121,17 +137,15 @@ public class OAuth2AuthorizationServerConfiguration {
         http
                 .
                 exceptionHandling((exception) -> exception.defaultAuthenticationEntryPointFor(
-                new LoginUrlAuthenticationEntryPoint("/login"),
-                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
-        ))
+                        new LoginUrlAuthenticationEntryPoint("/login"),
+                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+                ))
                 //处理access_token 访问用户信息断电和客户端注册端点
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(Customizer.withDefaults()))
         ;
 
 //        让认证服务器元数据中有自定义的认证方式这个配置是为了访问/.well-known/oauth-authorization-server时返回的元数据中有咱们自定的grant type
-
-
 
 
         // 自定义短信认证登录转换器
@@ -145,7 +159,7 @@ public class OAuth2AuthorizationServerConfiguration {
                 // 让认证服务器元数据中有自定义的认证方式
                 .authorizationServerMetadataEndpoint(metadata
                         -> metadata.authorizationServerMetadataCustomizer(customizer
-                            -> customizer.grantType(SecurityConstants.GRANT_TYPE_SMS_CODE)))
+                        -> customizer.grantType(SecurityConstants.GRANT_TYPE_SMS_CODE)))
                 // 添加自定义grant_type——短信认证登录
                 .tokenEndpoint(tokenEndpoint -> tokenEndpoint
                         .accessTokenRequestConverter(converter)
@@ -172,19 +186,10 @@ public class OAuth2AuthorizationServerConfiguration {
         refreshProvider.setTokenGenerator(tokenGenerator);
 
 
-
-
-
-
-
-
-
         return build;
     }
 
-
-
-    //2.2 配置身份验证过滤器链
+//    2.3 配置密码解析器
 
     /**
      * 配置认证相关的过滤器链
@@ -228,7 +233,8 @@ public class OAuth2AuthorizationServerConfiguration {
         return http.build();
     }
 
-//    2.3 配置密码解析器
+    //2.4 配置客户端repository 并设置默认的客户端
+
     /**
      * 配置密码解析器，使用BCrypt的方式对密码进行加密和验证
      *
@@ -239,7 +245,8 @@ public class OAuth2AuthorizationServerConfiguration {
         return new BCryptPasswordEncoder();
     }
 
-    //2.4 配置客户端repository 并设置默认的客户端
+    //2.5 配置授权管理服务
+
     /**
      * 配置客户端Repository
      *
@@ -251,30 +258,30 @@ public class OAuth2AuthorizationServerConfiguration {
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
         RegisteredClient registeredClient =
                 RegisteredClient.withId(UUID.randomUUID().toString())
-                // 客户端id
-                .clientId("messaging-client")
-                // 客户端秘钥，使用密码解析器加密
-                .clientSecret(passwordEncoder.encode("123456"))
-                // 客户端认证方式，基于请求头的认证
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                // 配置资源服务器使用该客户端获取授权时支持的方式
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .authorizationGrantType(SecurityConstants.GRANT_TYPE_SMS_CODE_Object)
-                // 授权码模式回调地址，oauth2.1已改为精准匹配，不能只设置域名，并且屏蔽了localhost
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
-                // 配置一个百度的域名回调，稍后使用该回调获取code
-                .redirectUri("https://www.baidu.com")
-                // 该客户端的授权范围，OPENID与PROFILE是IdToken的scope，获取授权时请求OPENID的scope时认证服务会返回IdToken
-                .scope(OidcScopes.OPENID)
-                .scope(OidcScopes.PROFILE)
-                // 自定scope
-                .scope("message.read")
-                .scope("message.write")
-                // 客户端设置，设置用户需要确认授权
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-                .build();
+                        // 客户端id
+                        .clientId("messaging-client")
+                        // 客户端秘钥，使用密码解析器加密
+                        .clientSecret(passwordEncoder.encode("123456"))
+                        // 客户端认证方式，基于请求头的认证
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                        // 配置资源服务器使用该客户端获取授权时支持的方式
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                        .authorizationGrantType(SecurityConstants.GRANT_TYPE_SMS_CODE_Object)
+                        // 授权码模式回调地址，oauth2.1已改为精准匹配，不能只设置域名，并且屏蔽了localhost
+                        .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
+                        // 配置一个百度的域名回调，稍后使用该回调获取code
+                        .redirectUri("https://www.baidu.com")
+                        // 该客户端的授权范围，OPENID与PROFILE是IdToken的scope，获取授权时请求OPENID的scope时认证服务会返回IdToken
+                        .scope(OidcScopes.OPENID)
+                        .scope(OidcScopes.PROFILE)
+                        // 自定scope
+                        .scope("message.read")
+                        .scope("message.write")
+                        // 客户端设置，设置用户需要确认授权
+                        .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                        .build();
 
         // 基于db存储客户端，还有一个基于内存的实现 InMemoryRegisteredClientRepository
         JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
@@ -303,7 +310,8 @@ public class OAuth2AuthorizationServerConfiguration {
         return registeredClientRepository;
     }
 
-    //2.5 配置授权管理服务
+    //2.6 配置授权确认管理服务
+
     /**
      * 配置基于db的oauth2的授权管理服务
      *
@@ -318,7 +326,8 @@ public class OAuth2AuthorizationServerConfiguration {
         return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
     }
 
-    //2.6 配置授权确认管理服务
+
+//    2.7  配置jwk
 
     /**
      * 配置基于db的授权确认管理服务
@@ -333,8 +342,6 @@ public class OAuth2AuthorizationServerConfiguration {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
-
-//    2.7  配置jwk
     /**
      * 配置jwk源，使用非对称加密，公开用于检索匹配指定选择器的JWK的方法
      *
@@ -353,24 +360,8 @@ public class OAuth2AuthorizationServerConfiguration {
         return new ImmutableJWKSet<>(jwkSet);
     }
 
-    /**
-     * 生成rsa密钥对，提供给jwk
-     *
-     * @return 密钥对
-     */
-    private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-        return keyPair;
-    }
-
 //    2.8  配置jwt解析器
+
     /**
      * 配置jwt解析器
      *
@@ -404,6 +395,7 @@ public class OAuth2AuthorizationServerConfiguration {
 
 
     //2.10
+
     /**
      * 先暂时配置一个基于内存的用户，框架在用户认证时会默认调用
      * {@link UserDetailsService#loadUserByUsername(String)} 方法根据
@@ -412,19 +404,19 @@ public class OAuth2AuthorizationServerConfiguration {
      * @param passwordEncoder 密码解析器
      * @return UserDetailsService
      */
-    @Bean
-    public UserDetailsService users(PasswordEncoder passwordEncoder) {
-        UserDetails user = User.withUsername("admin")
-                .password(passwordEncoder.encode("12345678"))
-                .roles("admin", "normal")
-                .authorities("app", "web")
-                .build();
-        return new InMemoryUserDetailsManager(user);
-    }
-
+//    @Bean
+//    public UserDetailsService users(PasswordEncoder passwordEncoder) {
+//        UserDetails user = User.withUsername("admin")
+//                .password(passwordEncoder.encode("12345678"))
+//                .roles("admin", "normal")
+//                .authorities("app", "web")
+//                .build();
+//        return new InMemoryUserDetailsManager(user);
+//    }
 
 
     // 5   自定义token信息
+
     /**
      * 自定义jwt，将权限信息放至jwt中
      *
@@ -475,9 +467,6 @@ public class OAuth2AuthorizationServerConfiguration {
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
     }
-
-
-
 
 
 }

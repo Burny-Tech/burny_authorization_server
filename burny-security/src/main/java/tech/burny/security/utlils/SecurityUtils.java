@@ -3,6 +3,9 @@ package tech.burny.security.utlils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,10 +22,6 @@ import org.springframework.security.oauth2.server.resource.authentication.Abstra
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * 认证鉴权工具
@@ -126,6 +125,7 @@ public class SecurityUtils {
         }
         return wwwAuthenticate.toString();
     }
+
     /**
      * 提取请求中的参数并转为一个map返回
      *
@@ -144,6 +144,7 @@ public class SecurityUtils {
         });
         return parameters;
     }
+
     /**
      * 抛出 OAuth2AuthenticationException 异常
      *

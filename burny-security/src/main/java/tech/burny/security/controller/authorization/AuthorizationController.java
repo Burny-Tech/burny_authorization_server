@@ -2,6 +2,12 @@ package tech.burny.security.controller.authorization;
 
 
 import jakarta.servlet.http.HttpSession;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.AuthenticationException;
@@ -17,13 +23,6 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * 认证服务器相关自定接口
@@ -41,6 +40,15 @@ public class AuthorizationController {
 
     //设备码模式
 
+    private static Set<ScopeWithDescription> withDescription(Set<String> scopes) {
+        Set<ScopeWithDescription> scopeWithDescriptions = new HashSet<>();
+        for (String scope : scopes) {
+            scopeWithDescriptions.add(new ScopeWithDescription(scope));
+
+        }
+        return scopeWithDescriptions;
+    }
+
     @GetMapping("/activate")
     public String activate(@RequestParam(value = "user_code", required = false) String userCode) {
         if (userCode != null) {
@@ -54,12 +62,12 @@ public class AuthorizationController {
         return "device-activated";
     }
 
+    //oauth2 集成
+
     @GetMapping(value = "/", params = "success")
     public String success() {
         return "device-activated";
     }
-
-    //oauth2 集成
 
     @GetMapping("/login")
     public String login(Model model, HttpSession session) {
@@ -119,19 +127,11 @@ public class AuthorizationController {
         return "consent";
     }
 
-    private static Set<ScopeWithDescription> withDescription(Set<String> scopes) {
-        Set<ScopeWithDescription> scopeWithDescriptions = new HashSet<>();
-        for (String scope : scopes) {
-            scopeWithDescriptions.add(new ScopeWithDescription(scope));
-
-        }
-        return scopeWithDescriptions;
-    }
-
     @Data
     public static class ScopeWithDescription {
         private static final String DEFAULT_DESCRIPTION = "UNKNOWN SCOPE - We cannot provide information about this permission, use caution when granting this.";
         private static final Map<String, String> scopeDescriptions = new HashMap<>();
+
         static {
             scopeDescriptions.put(
                     OidcScopes.PROFILE,
@@ -159,9 +159,6 @@ public class AuthorizationController {
             this.description = scopeDescriptions.getOrDefault(scope, DEFAULT_DESCRIPTION);
         }
     }
-
-
-
 
 
 }

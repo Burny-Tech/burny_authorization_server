@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class SmsController {
     @ResponseBody
     @GetMapping("/getSmsCaptcha")
-    public Map<String,Object> getSmsCaptcha(String phone, HttpSession session) {
+    public Map<String, Object> getSmsCaptcha(String phone, HttpSession session) {
         // 这里应该返回一个统一响应类，暂时使用map代替
-        Map<String,Object> result = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         result.put("code", HttpStatus.OK.value());
         result.put("success", true);
         result.put("message", "获取短信验证码成功.");

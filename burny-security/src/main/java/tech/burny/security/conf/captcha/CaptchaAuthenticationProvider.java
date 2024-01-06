@@ -35,7 +35,7 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
      * 设置调用父类关于这两个属性的set方法设置进去
      *
      * @param userDetailsService 用户服务，给框架提供用户信息
-     * @param passwordEncoder 密码解析器，用于加密和校验密码
+     * @param passwordEncoder    密码解析器，用于加密和校验密码
      */
     public CaptchaAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         super.setPasswordEncoder(passwordEncoder);
@@ -53,7 +53,7 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
             invalidCaptchaException.printStackTrace();
             throw invalidCaptchaException;
         }
-        HttpServletRequest request = ((ServletRequestAttributes)requestAttributes).getRequest();
+        HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
 
 
         // 8 !! 重点。如果用自定义grant_type 的方式，smprovider 会比这个先执行，后执行到这里的时候
@@ -64,7 +64,6 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
             log.info("It isn't necessary captcha authenticate.");
             return super.authenticate(authentication);
         }
-
 
 
         // 获取参数中的验证码

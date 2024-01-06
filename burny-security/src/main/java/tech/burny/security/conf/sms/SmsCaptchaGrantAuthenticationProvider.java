@@ -1,13 +1,10 @@
 package tech.burny.security.conf.sms;
 
 
-import cn.hutool.core.collection.CollectionUtil;
 import java.security.Principal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -19,7 +16,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClaimAccessor;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -44,7 +40,6 @@ import org.springframework.security.oauth2.server.authorization.context.Authoriz
 import org.springframework.security.oauth2.server.authorization.token.DefaultOAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import tech.burny.common.constant.SecurityConstants;
@@ -59,15 +54,11 @@ import tech.burny.security.utlils.SecurityUtils;
 //@Component
 public class SmsCaptchaGrantAuthenticationProvider implements AuthenticationProvider {
 
-    private OAuth2TokenGenerator<?> tokenGenerator;
-
-    private AuthenticationManager authenticationManager;
-
-    private OAuth2AuthorizationService authorizationService;
-
     private static final String ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc6749#section-5.2";
-
     private static final OAuth2TokenType ID_TOKEN_TOKEN_TYPE = new OAuth2TokenType(OidcParameterNames.ID_TOKEN);
+    private OAuth2TokenGenerator<?> tokenGenerator;
+    private AuthenticationManager authenticationManager;
+    private OAuth2AuthorizationService authorizationService;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -151,7 +142,7 @@ public class SmsCaptchaGrantAuthenticationProvider implements AuthenticationProv
             if (log.isTraceEnabled()) {
                 log.trace("Generated refresh token");
             }
-              refreshToken = new OAuth2RefreshToken(generatedRefreshToken.getTokenValue(),
+            refreshToken = new OAuth2RefreshToken(generatedRefreshToken.getTokenValue(),
                     generatedAccessToken.getIssuedAt(),
                     expireAt2);
 
@@ -237,9 +228,9 @@ public class SmsCaptchaGrantAuthenticationProvider implements AuthenticationProv
      *
      * @param authenticationToken converter构建的认证信息，这里是包含手机号与验证码的
      * @return 认证信息
-     *
+     * <p>
      * 这个就是账号密码登录模式
-     *
+     * <p>
      * 可以在这里面校验短信验证码的，然后如果错了就抛出异常，如果时对的话就照样就返回 传进来的的 SmsCaptchaGrantAuthenticationToken authenticationToken
      * 不用再进行  authenticationManager.authenticate(unauthenticated); 进行校验
      */

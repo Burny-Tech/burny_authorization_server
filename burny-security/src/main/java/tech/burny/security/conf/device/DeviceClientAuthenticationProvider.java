@@ -21,22 +21,29 @@ import org.springframework.security.oauth2.server.authorization.web.OAuth2Client
  * @author Joe Grandja
  * @author Steve Riesenberg
  * @author vains
- * @since 1.1
  * @see DeviceClientAuthenticationToken
  * @see DeviceClientAuthenticationConverter
  * @see OAuth2ClientAuthenticationFilter
+ * @since 1.1
  */
 @Slf4j
 @RequiredArgsConstructor
 public final class DeviceClientAuthenticationProvider implements AuthenticationProvider {
 
-    private final RegisteredClientRepository registeredClientRepository;
-
     /**
      * 异常说明地址
      */
     private static final String ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc6749#section-3.2.1";
+    private final RegisteredClientRepository registeredClientRepository;
 
+    private static void throwInvalidClient(String parameterName) {
+        OAuth2Error error = new OAuth2Error(
+                OAuth2ErrorCodes.INVALID_CLIENT,
+                "Device client authentication failed: " + parameterName,
+                ERROR_URI
+        );
+        throw new OAuth2AuthenticationException(error);
+    }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -82,15 +89,6 @@ public final class DeviceClientAuthenticationProvider implements AuthenticationP
     public boolean supports(Class<?> authentication) {
         // 只处理设备码请求
         return DeviceClientAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    private static void throwInvalidClient(String parameterName) {
-        OAuth2Error error = new OAuth2Error(
-                OAuth2ErrorCodes.INVALID_CLIENT,
-                "Device client authentication failed: " + parameterName,
-                ERROR_URI
-        );
-        throw new OAuth2AuthenticationException(error);
     }
 
 }

@@ -4,20 +4,20 @@ spring:
   application:
     name: burny_security
   datasource:
-    driver-class-name:  com.mysql.cj.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://192.168.1.62:3306/burny?useUnicode=true&characterEncoding=utf-8&useSSL=false
     username: burny
     password: Burny@2024
   jpa:
     show-sql: true
-#    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    #    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     open-in-view: true
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         enable_lazy_load_no_trans: true
-# 资源服务器配置 开始
+  # 资源服务器配置 开始
 
   security:
     oauth2:
@@ -44,7 +44,7 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: tech.burny
     - group: '权限'
-#      paths-to-match: '/**'
+      #      paths-to-match: '/**'
       packages-to-scan: tech.burny.security
 # knife4j的增强配置，不需要增强可以不配
 knife4j:

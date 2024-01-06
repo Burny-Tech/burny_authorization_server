@@ -17,7 +17,7 @@ import org.springframework.util.StringUtils;
 import tech.burny.common.constant.SecurityConstants;
 import tech.burny.security.utlils.SecurityUtils;
 
-public class SmsCaptchaGrantAuthenticationConverter  implements AuthenticationConverter {
+public class SmsCaptchaGrantAuthenticationConverter implements AuthenticationConverter {
 
     static final String ACCESS_TOKEN_REQUEST_ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc6749#section-5.2";
 

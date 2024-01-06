@@ -28,9 +28,8 @@ import tech.burny.security.exception.InvalidCaptchaException;
 @Slf4j
 public class CaptchaAuthenticationFilter extends GenericFilterBean {
 
-    private AuthenticationFailureHandler failureHandler;
-
     private final RequestMatcher requiresAuthenticationRequestMatcher;
+    private AuthenticationFailureHandler failureHandler;
 
     /**
      * 初始化该过滤器，设置拦截的地址

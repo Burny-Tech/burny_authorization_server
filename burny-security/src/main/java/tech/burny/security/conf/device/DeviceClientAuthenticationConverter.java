@@ -2,7 +2,6 @@ package tech.burny.security.conf.device;
 
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;

@@ -44,4 +44,11 @@ knife4j:
 logging:
   level:
     root: debug
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto
+  mapper-locations:
+    - classpath:tech/burny/security/mapper/xml/*Mapper.xml
+
 
