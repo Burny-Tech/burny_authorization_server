@@ -47,6 +47,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -57,6 +58,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import java.util.stream.Collectors;
+import tech.burny.common.constant.RedisConstants;
 import tech.burny.common.constant.SecurityConstants;
 import tech.burny.security.conf.device.DeviceClientAuthenticationConverter;
 import tech.burny.security.conf.device.DeviceClientAuthenticationProvider;
@@ -64,6 +66,7 @@ import tech.burny.security.conf.frontBackSep.LoginFailureHandler;
 import tech.burny.security.conf.frontBackSep.LoginSuccessHandler;
 import tech.burny.security.conf.frontBackSep.LoginTargetAuthenticationEntryPoint;
 import tech.burny.security.conf.frontBackSep.RedisSecurityContextRepository;
+import tech.burny.security.conf.redis.RedisOperator;
 import tech.burny.security.conf.sms.SmsCaptchaGrantAuthenticationConverter;
 import tech.burny.security.conf.sms.SmsCaptchaGrantAuthenticationProvider;
 import tech.burny.security.utlils.SecurityUtils;
@@ -88,6 +91,8 @@ public class OAuth2AuthorizationServerConfiguration {
     private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
 
     private final RedisSecurityContextRepository redisSecurityContextRepository;
+
+    private final RedisOperator<String> redisOperator;
 
     /**
      * 配置端点的过滤器链
@@ -439,16 +444,31 @@ public class OAuth2AuthorizationServerConfiguration {
      *
      * @return JWKSource
      */
+
     @Bean
+    @SneakyThrows
     public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
-        JWKSet jwkSet = new JWKSet(rsaKey);
+        // 先从redis获取
+        //后期可以改为从数据库获取
+        String jwkSetCache = redisOperator.get(RedisConstants.AUTHORIZATION_JWS_PREFIX_KEY);
+        if (ObjectUtils.isEmpty(jwkSetCache)) {
+            KeyPair keyPair = generateRsaKey();
+            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+            RSAKey rsaKey = new RSAKey.Builder(publicKey)
+                    .privateKey(privateKey)
+                    .keyID(UUID.randomUUID().toString())
+                    .build();
+            // 生成jws
+            JWKSet jwkSet = new JWKSet(rsaKey);
+            // 转为json字符串
+            String jwkSetString = jwkSet.toString(Boolean.FALSE);
+            // 存入redis
+            redisOperator.set(RedisConstants.AUTHORIZATION_JWS_PREFIX_KEY, jwkSetString);
+            return new ImmutableJWKSet<>(jwkSet);
+        }
+        // 解析存储的jws
+        JWKSet jwkSet = JWKSet.parse(jwkSetCache);
         return new ImmutableJWKSet<>(jwkSet);
     }
 

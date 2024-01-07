@@ -27,6 +27,9 @@ public class RedisConstants {
 
     public static final String SECURITY_CONTEXT_PREFIX_KEY = "security_context:";
 
+    public static final String AUTHORIZATION_JWS_PREFIX_KEY = "authorization_jws";
+
+
 
 }
 
