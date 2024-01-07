@@ -43,6 +43,7 @@ Invalid username or password.
                     统一认证平台
                 </span>
         </div>
+
         <div>
             <input autofocus class="form-control" id="username" name="username" onblur="leave()"
                    placeholder="手机 / 邮箱" type="text"/>
@@ -52,6 +53,8 @@ Invalid username or password.
                    type="password"/>
         </div>
         <div class="code-container" id="codeContainer">
+            <input type="hidden" id="captchaId" name="captchaId" value=""/>
+
             <input class="form-control" id="code" name="code" onblur="leave()" placeholder="请输入验证码"
                    type="text"/>
             <img id="code-image" onclick="getVerifyCode()" src=""/>
@@ -148,11 +151,14 @@ Sign in with Gitee
             .then(r => {
                 if (r) {
                     let result = JSON.parse(r);
-                    document.getElementById('code-image').src = result.data
+                    console.log(result);
+                    document.getElementById('captchaId').value = result.data.captchaId
+                    document.getElementById('code-image').src = result.data.imageData
                 }
             })
             .catch(error => console.log('error', error));
     }
+
 
     function getSmsCaptcha() {
 

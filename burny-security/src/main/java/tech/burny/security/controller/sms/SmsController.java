@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 //8 短信验证码
 @RestController
-@RequestMapping("/getSmsCaptcha")
+@RequestMapping("/getSmsCaptcha1")
 public class SmsController {
     @ResponseBody
     @GetMapping("/getSmsCaptcha")

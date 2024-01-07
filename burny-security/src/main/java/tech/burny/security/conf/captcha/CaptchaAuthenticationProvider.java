@@ -15,7 +15,11 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import tech.burny.common.constant.SecurityConstants;
+import tech.burny.security.conf.redis.RedisOperator;
 import tech.burny.security.exception.InvalidCaptchaException;
+
+
+import static tech.burny.common.constant.RedisConstants.IMAGE_CAPTCHA_PREFIX_KEY;
 
 /**
  * 验证码校验
@@ -29,6 +33,9 @@ import tech.burny.security.exception.InvalidCaptchaException;
 @Component
 public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
 
+
+    private final RedisOperator<String> redisOperator;
+
     /**
      * 利用构造方法在通过{@link Component}注解初始化时
      * 注入UserDetailsService和passwordEncoder，然后
@@ -37,9 +44,10 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
      * @param userDetailsService 用户服务，给框架提供用户信息
      * @param passwordEncoder    密码解析器，用于加密和校验密码
      */
-    public CaptchaAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+    public CaptchaAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder ,RedisOperator redisOperator) {
         super.setPasswordEncoder(passwordEncoder);
         super.setUserDetailsService(userDetailsService);
+        this.redisOperator = redisOperator;
     }
 
     @Override
@@ -74,18 +82,15 @@ public class CaptchaAuthenticationProvider extends DaoAuthenticationProvider {
             throw invalidCaptchaException;
         }
 
-        // 获取session中存储的验证码
-        Object sessionCaptcha = request.getSession(Boolean.FALSE).getAttribute("captcha");
-        if (sessionCaptcha instanceof String sessionCode) {
-            if (!sessionCode.equalsIgnoreCase(code)) {
-                InvalidCaptchaException invalidCaptchaException = new InvalidCaptchaException("The captcha is incorrect.");
-                invalidCaptchaException.printStackTrace();
-                throw invalidCaptchaException;
+        String captchaId = request.getParameter(SecurityConstants.CAPTCHA_ID_NAME);
+        // 获取缓存中存储的验证码
+        String captchaCode = redisOperator.getAndDelete((IMAGE_CAPTCHA_PREFIX_KEY + captchaId));
+        if (!ObjectUtils.isEmpty(captchaCode)) {
+            if (!captchaCode.equalsIgnoreCase(code)) {
+                throw new InvalidCaptchaException("The captcha is incorrect.");
             }
         } else {
-            InvalidCaptchaException invalidCaptchaException = new InvalidCaptchaException("The captcha is abnormal. Obtain it again.");
-            invalidCaptchaException.printStackTrace();
-            throw invalidCaptchaException;
+            throw new InvalidCaptchaException("The captcha is abnormal. Obtain it again.");
         }
 
         log.info("Captcha authenticated.");

@@ -60,6 +60,8 @@ public class SmsCaptchaGrantAuthenticationProvider implements AuthenticationProv
     private AuthenticationManager authenticationManager;
     private OAuth2AuthorizationService authorizationService;
 
+
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         Instant expireAt = LocalDateTime.now().plusYears(1).toInstant(ZoneOffset.UTC);

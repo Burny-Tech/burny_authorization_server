@@ -93,9 +93,9 @@ public class Oauth2BasicUser implements Serializable, UserDetails {
 
 
     @TableField(exist = false)
-   private Collection<? extends GrantedAuthority> authorities;
+   private Collection<CustomGrantedAuthority> authorities;
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
+    public Collection<CustomGrantedAuthority> getAuthorities() {
         return authorities;
     }
 

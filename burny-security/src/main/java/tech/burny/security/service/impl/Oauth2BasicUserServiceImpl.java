@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+import tech.burny.security.entity.CustomGrantedAuthority;
 import tech.burny.security.entity.Oauth2BasicUser;
 import tech.burny.security.entity.SysAuthority;
 import tech.burny.security.entity.SysRoleAuthority;
@@ -73,7 +74,7 @@ public class Oauth2BasicUserServiceImpl extends ServiceImpl<Oauth2BasicUserMappe
 
         // 根据菜单ID查出菜单
         List<SysAuthority> menus = sysAuthorityMapper.selectBatchIds(menusId);
-        Set<SimpleGrantedAuthority> authorities = Optional.ofNullable(menus).orElse(Collections.emptyList()).stream().map(SysAuthority::getUrl).map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
+        Set<CustomGrantedAuthority> authorities = Optional.ofNullable(menus).orElse(Collections.emptyList()).stream().map(SysAuthority::getUrl).map(CustomGrantedAuthority::new).collect(Collectors.toSet());
         basicUser.setAuthorities(authorities);
 
 
